@@ -1,0 +1,45 @@
+{
+  "name": "@bhoos/reflex-ui",
+  "version": "1.0.0",
+  "description": "UI For Reflex Game",
+  "module": "es6/index.js",
+  "type": "module",
+  "types": "./src/index.ts",
+  "react-native": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "release": "npm dist-tag add ${npm_package_name}@${npm_package_version} latest",
+    "test": "vitest ."
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@github.com/bhoos/reflex.git"
+  },
+  "dependencies": {
+    "@bhoos/game-kit-ui": ">=4.0.0 <5",
+    "@bhoos/games-ui": ">=4.0.0",
+    "@bhoos/reflex-engine": "^1.0.0"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "@shopify/react-native-skia": "*",
+    "react-native-reanimated": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.0",
+    "@types/react": "^18.0.24",
+    "@types/react-native": "^0.72.2",
+    "typescript": "^4.8.4",
+    "@shopify/react-native-skia": "*",
+    "react-native-reanimated": "*",
+    "react-native-skottie": "*"
+  },
+  "license": "UNLICENSED"
+}

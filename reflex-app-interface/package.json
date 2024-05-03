@@ -1,0 +1,43 @@
+{
+  "name": "@bhoos/reflex-app-interface",
+  "version": "1.0.0",
+  "description": "App Interface For Reflex Game",
+  "type": "module",
+  "types": "./src/index.ts",
+  "react-native": "src/index.ts",
+  "files": [
+    "src",
+    "assets"
+  ],
+  "scripts": {
+    "build:es6": "tsc",
+    "release": "npm dist-tag add ${npm_package_name}@${npm_package_version} latest"
+  },
+  "dependencies": {
+    "@bhoos/game-kit-ui": "^4.0.0",
+    "@bhoos/reflex-engine": "1.0.0",
+    "@bhoos/reflex-ui": "1.0.0",
+    "@bhoos/super-app-interface": ">=1.2.0 <2",
+    "@bhoos/super-components": "^1.0.0"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.0",
+    "@types/react": "^18.0.24",
+    "@types/react-native": "^0.72.2",
+    "typescript": "^4.8.4",
+    "@bhoos/react-kit-modal": "^1.0.0-rc.3",
+    "@shopify/react-native-skia": "*"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@github.com/bhoos/reflex.git"
+  },
+  "bhoos": {
+    "gameId": 13
+  }
+}

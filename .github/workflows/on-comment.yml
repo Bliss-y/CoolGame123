@@ -1,0 +1,51 @@
+# When issue is created with title "Deploy" and anybody
+# comment "/deploy" in comment this workflow is triggered.
+# This workflow publish the package in @next tag.
+
+name: Process master branch for @staging tag
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  prepare-master:
+    if: ${{  contains(github.event.comment.html_url, '/issues') && contains(github.event.comment.body, '/deploy') && (github.event.issue.state == 'open') && startsWith(github.event.issue.title, 'Deploy') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build from main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: |
+          git config user.name bhoos-devops
+          git config user.email devops@bhoos.com
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@bhoos'
+
+      - name: Install Dependencies and publish packages
+        run: |
+          yarn
+          yarn lerna run build
+          yarn lerna publish from-package --yes --no-verify-access --dist-tag staging
+          version=$(node -p "require('./package.json').version")
+          echo "RELEASE_VERSION=v${version}" >> $GITHUB_ENV
+          echo "ISSUE_NUMBER=${{github.event.issue.number}}" >> $GITHUB_ENV
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Create Release for moving to production
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.RELEASE_VERSION }}
+          name: Release Reflex (#${{ env.ISSUE_NUMBER }}) (tag#${{ env.RELEASE_VERSION }}) 
+          commit: main
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

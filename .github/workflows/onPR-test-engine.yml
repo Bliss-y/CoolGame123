@@ -1,0 +1,102 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+# See:
+# https://github.com/marketplace/actions/vitest-coverage-report
+# https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+
+name: Node.js CI
+
+on:
+  pull_request_target:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: write
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-tags: true
+        fetch-depth: 0
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14.x'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@bhoos'
+
+    - name: Comparing recent tag with current version in package.json
+      run: |
+        function compare(){
+          IFS='.' read -ra arr1 <<< "$1"
+          IFS='.' read -ra arr2 <<< "$2"
+          for i in "${!arr1[@]}"; do
+            if [ "${arr1[$i]}" -lt "${arr2[$i]}" ]; then
+              echo "Package.json file version: $2\nRecent Tag: $1"
+              echo "should pass"
+              exit 0
+            elif [ "${arr1[$i]}" -gt "${arr2[$i]}" ]; then
+              echo "Package.json file version: $2\nRecent Tag: $1"
+              echo "should Fail"
+              exit 1
+            fi
+          done
+          echo "Package.json file version: $2\nRecent Tag: $1"
+          echo "should fail"
+          exit 1
+        }
+        current_version="$(node -p "require('./package.json').version")"
+        current_tag="$(git describe --tags --abbrev=0 | cut -c 2-)"
+        compare $current_tag $current_version
+
+        # Check the diff of UI
+        echo "Check the diff of UI."
+        commit_hash="$(git rev-list -n 1 $current_tag)"
+        if [ $(git diff $commit_hash HEAD reflex-ui/ | wc -l) -gt 1 ]; then
+          old_version=$(git show $commit_hash:reflex-ui/package.json | grep version | awk -F'[\"]' '{print $4}' | awk 'NR==1'{print;})
+          new_version=$(node -p "require('./reflex-ui/package.json').version")
+          compare $old_version $new_version
+        if
+
+        # Check the diff of Engine
+        echo "Check the diff of Engine."
+        if [ $(git diff $commit_hash HEAD reflex-engine/ | wc -l) -gt 1 ]; then
+          old_version=$(git show $commit_hash:reflex-engine/package.json | grep version | awk -F'[\"]' '{print $4}' | awk 'NR==1'{print;})
+          new_version=$(node -p "require('./reflex-engine/package.json').version")
+          compare $old_version $new_version
+        fi
+
+    - name: Cache npm
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ hashFiles('**/reflex-engine/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - run: npm install
+      working-directory: ./reflex-engine
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+    - run: npm run build
+      working-directory: ./reflex-engine
+
+    - run: npm test -- --coverage run
+      working-directory: ./reflex-engine
+
+    - name: Report Coverage
+      uses: davelosert/vitest-coverage-report-action@v2
+      with:
+        working-directory: ./reflex-engine

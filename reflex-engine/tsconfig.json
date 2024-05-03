@@ -1,0 +1,28 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020"],
+    "types": [ "node" ],
+    "module": "es6",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "declaration": true,
+    "outDir": "es6",
+    "strict": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
+}

@@ -1,0 +1,10 @@
+.DS_Store
+.projectile
+dist
+es6
+yarn-error.log
+node_modules
+yarn.lock
+/reflex-engine/coverage/
+/reflex-app-interface/build/ 
+

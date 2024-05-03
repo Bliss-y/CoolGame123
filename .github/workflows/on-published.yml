@@ -1,0 +1,31 @@
+
+# Promote staging version to production (latest)
+name: Promote to Production
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  production-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch from title
+        run: |
+          echo "TAG=$(echo $RELEASE_TITLE | awk -F'[\#\)]' '{print $4}')" >> $GITHUB_ENV
+        env:
+          RELEASE_TITLE: ${{github.event.release.name}}
+      - name: Build from ${{ env.TAG }} branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@bhoos'
+
+      - name: Publish release
+        run: yarn release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
