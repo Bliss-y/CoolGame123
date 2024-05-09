@@ -40,3 +40,4 @@ export class PlayWidget extends Widget<Layout, State, SpriteManager> {
     setLayout(this.button, this.layout);
   }
 }
+

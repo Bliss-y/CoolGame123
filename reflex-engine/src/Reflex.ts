@@ -4,6 +4,7 @@ import { FinishGameAction, StartGameAction, PlayAction } from './actions';
 import { Oracle } from '@bhoos/serialization';
 import { PlayApi } from './apis';
 import { ReflexConfig } from './ReflexConfig.js';
+import { Controller } from './ecs/Object.js';
 
 export interface ReflexActionConsumer<Return> {
   onStartGame(action: StartGameAction): Return;
@@ -11,7 +12,7 @@ export interface ReflexActionConsumer<Return> {
   onFinishGame(action: FinishGameAction): Return;
 }
 
-export interface ReflexEventConsumer extends EventConsumer {}
+export interface ReflexEventConsumer extends EventConsumer { }
 
 export type ReflexPlayer = {
   id: string;

@@ -9,6 +9,7 @@ import {
 } from '@bhoos/reflex-engine';
 import { ReflexLayouts, computeLayouts, createWidgets } from './ReflexWidgets';
 import { ConfigOf } from '@bhoos/game-kit-engine/src/Game';
+import { CircleSprite } from './sprites/Screen';
 
 const ANIMATION_SPEED = 1;
 const FLIP_SPEED_300 = ANIMATION_SPEED * 300;
@@ -21,7 +22,7 @@ export type ReflexUIEnv = Environment<Reflex>;
 export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
   protected sm: SpriteManager;
   public state!: ReflexState;
-  protected env!: ReflexUIEnv;
+  public env!: ReflexUIEnv;
 
   public layouts: ReflexLayouts;
   private _layout: CoordinateSystem;
@@ -37,15 +38,16 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
   }
 
   /// INTERACTION WITH GAME CLIENT
-  onMatchEnd(): void {}
+  onMatchEnd(): void { }
 
-  onBackLog(backLog: number, catchup: () => Promise<void>): void {}
+  onBackLog(backLog: number, catchup: () => Promise<void>): void { }
 
   async onStateUpdate() {
     for (let i = 0; i < this.state.players.length; i++) {
       this.widgets.profiles[i].draw();
     }
-    this.widgets.playButton.draw();
+    this.widgets.screen.onGameUpdate(this.state);
+    this.widgets.controller.draw();
   }
 
   getSpriteManager(): SpriteManager {
@@ -63,16 +65,15 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
     return true;
   }
 
-  onDetach(): void {}
+  onDetach(): void { }
 
   /// EVENT CONSUMER
-  onTimer(): void {}
+  onTimer(): void { }
 
-  onConnectionStatus(): void {}
+  onConnectionStatus(): void { }
 
   // USER INTERACTION
   async onUserPlay() {
-    this.env.client.execute(PlayApi.create(this.state.userIdx)).catch(console.error);
   }
 
   // ACTION HANDLERS
@@ -81,14 +82,18 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
       for (let i = 0; i < this.state.players.length; i++) {
         this.widgets.profiles[i].draw();
       }
-      this.widgets.playButton.draw();
+      this.widgets.screen.onGameUpdate(this.state);
+      this.widgets.controller.draw();
     };
   }
 
   onPlay(action: PlayAction): UIActionReturn {
     return () => {
-      const offset = (action.playerIdx - this.state.userIdx + this.state.players.length) % this.state.players.length;
-      this.widgets.profiles[offset].draw();
+      const userIdx = this.state.userIdx;
+      this.state = action.state;
+      this.state.userIdx = userIdx;
+      this.widgets.screen.onGameUpdate(this.state);
+      this.widgets.controller.draw();
     }
   }
 
@@ -96,7 +101,6 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
     () => {
       const offset = (action.winnerIdx - this.state.userIdx + this.state.players.length) % this.state.players.length;
       this.widgets.profiles[offset].draw();
-      this.widgets.playButton.draw();
     }
   }
 

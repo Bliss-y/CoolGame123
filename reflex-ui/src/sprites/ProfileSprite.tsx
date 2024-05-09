@@ -29,8 +29,8 @@ export class ProfileSprite implements Sprite {
     const profile = Reference.use(this.profile);
 
     return (
-      <Animated.View ref={this.zIndex.ref} {...props} style={this.layoutStyles}>
-        <Avatar glow={false} path={profile.picture} style={{ top: 10 }} size={52} />
+      <Animated.View ref={this.zIndex.ref} {...props} style={{...this.layoutStyles, position: 'absolute'} }>
+        <Avatar glow={false} path={profile.picture} style={{ top: 10 }} size={500} />
         <Text>{profile.clickCount}</Text>
         <NameTag name={profile.name} />
       </Animated.View>

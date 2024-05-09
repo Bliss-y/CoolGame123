@@ -1,9 +1,11 @@
 import { Action, Client, Match } from '@bhoos/game-kit-engine';
 import { Serializer } from '@bhoos/serialization';
 import { Reflex, ReflexActionConsumer } from '../Reflex.js';
+import { ReflexState } from '../ReflexState.js';
 
 export class PlayAction extends Action<Reflex> {
   playerIdx!: number;
+  state!: ReflexState;
 
   forwardTo<R>(consumer: ReflexActionConsumer<R>): R {
     return consumer.onPlay(this);
@@ -17,10 +19,9 @@ export class PlayAction extends Action<Reflex> {
     return this;
   }
 
-  static create(playerIdx: number) {
+  static create(state: ReflexState) {
     const instance = new PlayAction();
-    instance.playerIdx = playerIdx;
-
+    instance.state = state;
     return instance;
   }
 }
