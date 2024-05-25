@@ -3,13 +3,13 @@ import {
   FinishGameAction,
   Reflex,
   ReflexState,
-  PlayAction,
   PlayApi,
   StartGameAction,
 } from '@bhoos/reflex-engine';
 import { ReflexLayouts, computeLayouts, createWidgets } from './ReflexWidgets';
 import { ConfigOf } from '@bhoos/game-kit-engine/src/Game';
 import { CircleSprite } from './sprites/Screen';
+import { PlayEvent } from '@bhoos/reflex-engine/src/actions/PlayAction';
 
 const ANIMATION_SPEED = 1;
 const FLIP_SPEED_300 = ANIMATION_SPEED * 300;
@@ -43,9 +43,6 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
   onBackLog(backLog: number, catchup: () => Promise<void>): void { }
 
   async onStateUpdate() {
-    for (let i = 0; i < this.state.players.length; i++) {
-      this.widgets.profiles[i].draw();
-    }
     this.widgets.screen.onGameUpdate(this.state);
     this.widgets.controller.draw();
   }
@@ -55,7 +52,6 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
   }
 
   onLayoutUpdate(layout: CoordinateSystem) {
-    this.widgets.profiles.forEach(p => p.updateLayout());
   }
 
   onAttach(env: ReflexUIEnv) {
@@ -76,31 +72,23 @@ export class ReflexUI implements UI<Reflex, ReflexUIEnv> {
   async onUserPlay() {
   }
 
+  onPlayEvent(event: PlayEvent): void {
+    this.state.onPlayEvent(event);
+    this.widgets.screen.onGameUpdate(this.state);
+    this.widgets.controller.draw();
+  }
+
   // ACTION HANDLERS
   async onStartGame(action: StartGameAction) {
     return async () => {
-      for (let i = 0; i < this.state.players.length; i++) {
-        this.widgets.profiles[i].draw();
-      }
       this.widgets.screen.onGameUpdate(this.state);
       this.widgets.controller.draw();
     };
   }
 
-  onPlay(action: PlayAction): UIActionReturn {
-    return () => {
-      const userIdx = this.state.userIdx;
-      this.state = action.state;
-      this.state.userIdx = userIdx;
-      this.widgets.screen.onGameUpdate(this.state);
-      this.widgets.controller.draw();
-    }
-  }
-
   onFinishGame(action: FinishGameAction): UIActionReturn {
     () => {
       const offset = (action.winnerIdx - this.state.userIdx + this.state.players.length) % this.state.players.length;
-      this.widgets.profiles[offset].draw();
     }
   }
 

@@ -7,6 +7,7 @@ export class StartGameAction extends Action<Reflex> {
   userIdx!: number;
 
   serialize(serializer: Serializer) {
+    console.log("start game action serializing");
     this.players = serializer.array(this.players, profile => {
       return (profile = serializer.obj(profile, profile => {
         profile.id = serializer.string(profile.id);
@@ -15,6 +16,8 @@ export class StartGameAction extends Action<Reflex> {
       }));
     });
     this.userIdx = serializer.int8(this.userIdx);
+    //@ts-ignore
+    console.log("start game action serializing", serializer.getBuffer());
   }
 
   forwardTo<R>(consumer: ActionConsumerOf<Reflex, R>): R {
@@ -24,12 +27,13 @@ export class StartGameAction extends Action<Reflex> {
   personalize(client: Client<Reflex>) {
     const instance = StartGameAction.create(this.players);
     instance.userIdx = this.players.findIndex(p => p.id === client.playerId);
+    console.log(client.playerId);
+    console.log(instance.userIdx);
     return instance as this;
   }
 
   static create(players: ReflexPlayer[]) {
     const instance = new StartGameAction();
-
     instance.players = players;
     instance.userIdx = -1;
 

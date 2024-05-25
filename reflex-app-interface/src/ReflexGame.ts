@@ -69,7 +69,7 @@ export function initializeReflexGame(): GameAppInterface<Reflex> {
       return !versionLt(version, '1.0.0');
     },
     reloadStorage: (version: string) => {
-      return versionLt(version, '1.0.0');
+      return true;
     },
     description: 'Click as fast as you can',
     supportedBots: Object.keys(BOTS),

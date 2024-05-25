@@ -17,15 +17,16 @@ export class ReflexBot implements Client<Reflex> {
     this.match = match;
   }
 
-  end(_code: number): void {}
+  end(_code: number): void { }
 
-  dispatch(_action: Action<Reflex>): void {}
+  dispatch(_action: Action<Reflex>): void { }
 
   emit(event: Event<Reflex>): void {
     if (event instanceof Timer) {
       if (event.target != this.playerIdx) return;
       if (event.type === PLAY_TIMER) {
-        this.match.execute(PlayApi.create(this.playerIdx), this).catch(console.error);
+        const randompos = Math.random();
+        this.match.execute(PlayApi.create(this.playerIdx, { x: randompos, y: 1 - randompos }), this).catch(console.error);
       }
     }
   }

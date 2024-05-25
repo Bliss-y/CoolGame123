@@ -21,7 +21,7 @@ function square(x: number) {
   return x * x;
 }
 export abstract class ControllerWidget extends Widget<Layout, State, SpriteManager> {
-  spr?: ControllerSprite;
+  spr: ControllerSprite;
   initialTouchPosition?: Position;
   currentTouchPosition?: Position;
   touch?: NativeTouchEvent;
@@ -38,9 +38,6 @@ export abstract class ControllerWidget extends Widget<Layout, State, SpriteManag
     computeState: () => State,
   ) {
     super(sm, computeLayout, computeState);
-  }
-
-  protected onDraw(): void {
     this.spr = this.sm.registerSprite(new ControllerSprite({
       onClick: (e: GestureResponderEvent) => {
         console.log("controller clicked!!!!!", e.nativeEvent.locationX, e.nativeEvent.locationY);
@@ -50,7 +47,6 @@ export abstract class ControllerWidget extends Widget<Layout, State, SpriteManag
         if (e.nativeEvent.identifier != this.touch?.identifier) {
           return;
         }
-        console.log("touch end", e.nativeEvent.timestamp, this.initialTouchTimestamp);
         if (e.nativeEvent.timestamp - this.initialTouchTimestamp! < 100 &&
           square(square(e.nativeEvent.locationX - this.initialTouchPosition!.x) + square(e.nativeEvent.locationY - this.initialTouchPosition!.y)) > 30 * 30) {
           console.log("flicked!!");
@@ -89,7 +85,11 @@ export abstract class ControllerWidget extends Widget<Layout, State, SpriteManag
     setLayout(this.spr, this.layout);
   }
 
+  protected onDraw(): void {
+  }
+
   protected onLayoutUpdate(): void {
+    setLayout(this.spr!, this.layout);
   }
 }
 

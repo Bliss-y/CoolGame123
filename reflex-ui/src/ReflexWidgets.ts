@@ -5,7 +5,6 @@ import { PlayerWidget } from './widgets/PlayerWidget';
 import { PlayWidget } from './widgets';
 import { ScreenWidget } from './widgets/ScreenWidget';
 import { StickController } from './widgets/StickController';
-import { BackgroundSprite } from './sprites/BackgroundSprite';
 
 export function computeLayouts(dimensions: CoordinateSystem) {
   const profiles: PlayerWidget['layout'][] = [
@@ -51,14 +50,7 @@ function createPlayerWidget(sm: SpriteManager, ui: ReflexUI, offset: number) {
 }
 
 export function createWidgets(ui: ReflexUI, sm: SpriteManager, config: ReflexConfig) {
-  sm.registerSprite(new BackgroundSprite());
   return {
-    profiles: [
-      createPlayerWidget(sm, ui, 0),
-      createPlayerWidget(sm, ui, 1),
-      createPlayerWidget(sm, ui, 2),
-      createPlayerWidget(sm, ui, 3),
-    ],
     screen: new ScreenWidget(sm, ui.state, () => ui.layouts.playButton, () => { return { active: ui.state.stage === REFLEX_STAGE_PLAY } }),
     controller: new StickController(sm, () => ui.layouts.playButton, () => { return { active: ui.state.stage === REFLEX_STAGE_PLAY } }, (position) => {
       ui.env.client.execute(PlayApi.create(ui.state.userIdx, position));

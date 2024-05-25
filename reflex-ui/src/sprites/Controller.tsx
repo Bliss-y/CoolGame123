@@ -28,7 +28,7 @@ export class ControllerSprite implements Sprite {
     return (
       <View style= {StyleSheet.absoluteFill}>
       <Pressable  onTouchMove={this.touchMove} onTouchStart={this.touchStart} onPress={this.onClick} onTouchEnd={this.touchEnd}>
-        <Canvas style = {{height: "100%", width: "100%", left: 0, top: 1, opacity: 0.051}}>
+        <Canvas style = {{height: "100%", width: "100%", left: 0, top: 1, opacity: 0.0}}>
             <Rect height={Dimensions.get("window").height} width={Dimensions.get("window").width} color={"blue"}></Rect>
         </Canvas>
       </Pressable>

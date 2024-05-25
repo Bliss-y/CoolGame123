@@ -27,11 +27,9 @@ export class StickController extends ControllerWidget {
     const dx = now.x - start.x;
     const dy = now.y - start.y;
     const total = Math.abs(dx) + Math.abs(dy);
-    console.log("moving", dx / total, dy / total);
     this.cb({ x: dx / total, y: dy / total });
   }
   touchEnd(e: GestureResponderEvent): void {
-    console.log("moving", 0, 0);
     this.cb({ x: 0, y: 0 });
   }
 

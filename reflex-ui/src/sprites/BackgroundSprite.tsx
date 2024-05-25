@@ -1,154 +1,187 @@
-import { Sprite } from "@bhoos/game-kit-ui";
-import { Canvas, Circle, Group, Rect, RuntimeShader, Skia, useClock, vec } from "@shopify/react-native-skia";
+import { Reference, Sprite } from "@bhoos/game-kit-ui";
+import { Canvas, Circle, Group, JsiSkImage, Rect, RuntimeShader, Skia, useClock, vec } from "@shopify/react-native-skia";
 import { Dimensions, StyleSheet } from "react-native";
-import  { useDerivedValue } from "react-native-reanimated";
+import  { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { View } from "react-native";
 
 let source = Skia.RuntimeEffect.Make(
-  `
+`
 uniform shader image;
-uniform float  iTime;   
+uniform vec2 iResolution;
+uniform float iTime;
+float N21(vec2 p)
+{
+    p = fract(p * vec2(6574.5414, 8961.8778));
+    p += dot(p, p + 23.45);
+    return fract(p.x * p.y);
+}
+vec2 N22(vec2 p)
+{
+    float x = N21(p);
+    float y = N21(p + x);
+    return vec2(x, y);
+}
+vec2 GetPos(vec2 id)
+{
+    vec2 n = N22(id) * 24.;
+    return sin(n) * .4;
+}
+float sn(vec2 uv)
+{
+    vec2 lv = fract(uv * 10.0);
+    vec2 id = floor(uv * 10.0);
 
-float f(vec3 p) {
-    p.z -= iTime * 10.;
-    float a = p.z * .1;
-    p.xy *= mat2(cos(a), sin(a), -sin(a), cos(a));
-    return .1 - length(cos(p.xy) + sin(p.yz));
+    lv = lv * lv * (3. - 2. * lv);
+
+    float bl = N21(id);
+    float br = N21(id +vec2(1, 0));
+    float b = mix(bl, br, lv.x);
+
+    float tl = N21(id + vec2(0,1));
+    float tr = N21(id +vec2(1, 1));
+    float t = mix(tl, tr, lv.x);
+
+    return mix(b, t, lv.y);
+}
+float stars(vec2 uv)
+{
+
+    vec2 gv = fract(uv) - 0.5;
+    vec2 id = floor(uv);
+    vec2 pos = GetPos(id);
+    float distance = length(gv - pos);
+    float shineRate = abs(sin(iTime * 0.8 * N21(id)));
+
+    float star = smoothstep(0.06, clamp(0.9 - sqrt(iTime / 10.0), 0.001, 0.059), distance) * shineRate;
+    return star - 0.15;
 }
 
-float julia(vec2 uv, vec2 c) {
-    const float maxSteps = 400;
-    for (float i = 0; i < maxSteps; i++) {
-        uv = vec2(uv.x * uv.x - uv.y * uv.y + c.x,
-                  2.0 * uv.x * uv.y + c.y);
-        if (length(uv) > 2) {
-            return i / maxSteps;
+vec3 animate(vec2 uv)
+{
+    float zoomout = sqrt((iTime * 5.25));
+    float andromedaFade = sqrt(iTime / 1.);
+    uv *= clamp(zoomout, 0.0, 1.8);
+
+    vec3 spaceCol = vec3(0.0, 0.0, 0.10);
+    vec3 andromedaColPink = vec3(0.8, 0.0, 0.7);
+    vec3 andromedaColGreen = vec3(0.2, 0.9, 0.2);
+
+    spaceCol += stars(uv);
+
+    vec2 androUV = uv;
+    float s = sin(iTime * 0.08);
+    float c = cos(iTime * 0.08);
+    mat2 rotmat = mat2(c, -s, s, c);
+    //androUV -= iTime * 0.2;
+    androUV *= rotmat;
+    float andromedaPinkNoise = sn(androUV * 0.03) * clamp(andromedaFade, 0.0, 1.6);
+    andromedaPinkNoise += sn(androUV * 0.25) * 0.125;
+    andromedaPinkNoise += sn(androUV * 0.125) * 0.625;
+    andromedaPinkNoise /= 5.0;
+    spaceCol +=  mix(spaceCol, andromedaColPink, andromedaPinkNoise);
+
+
+    s = sin(iTime * 0.03);
+    c = cos(iTime * 0.03);
+    rotmat = mat2(c, s, -s, c);
+    vec2 androUV2 = uv;
+    androUV2.y += iTime * 0.3;
+    androUV2 *= rotmat;
+    float andromedaGreenNoise = sn(androUV2 * 0.03) * clamp(andromedaFade, 0.0, 1.6);
+    andromedaGreenNoise += sn(androUV2 * 0.25) * 0.125;
+    andromedaGreenNoise += sn(androUV2 * 0.125) * 0.625;
+    andromedaGreenNoise /= 3.0;
+    spaceCol +=  mix(spaceCol, andromedaColGreen, andromedaGreenNoise);
+
+    return spaceCol;
+}
+
+vec4 main(in vec2 fragCoord )
+{
+    vec2 uv = (fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y * 10.;
+    vec3 col = animate(uv);
+    return vec4(col, 1.0);
+}
+`)!;
+
+const objects = [[0.2, 0.2, 0.5, 0.5], [0.3, 0.3, 0.1, 0.8]];
+const shader2 = Skia.RuntimeEffect.Make(
+`
+uniform shader image;
+uniform vec4 objects[14];
+uniform vec2 iResolution;
+vec4 circle(vec2 uv, vec2 pos, float rad, vec3 color) {
+	float d = length(pos - uv) - rad;
+	float t = clamp(d, 0.0, 1.0);
+	return vec4(color, 1.0 - t);
+}
+vec4 main(  in vec2 fragCoord )
+{
+  vec4 fragColor;
+    // Normalized pixel coordinates (from 0 to 1)
+    fragColor = vec4(0.0,0.0,0.,0.);
+    vec2 p = (2.0*fragCoord-iResolution.xy)/iResolution.y;
+    for(int i=0;i<14;++i)
+    {
+        vec3 color;
+        if(objects[i][3] == 0.1) {
+          color = vec3(0.98,0.,0.);
         }
+        if(objects[i][3] == 0.2) {
+          color = vec3(0.,0.9,0.);
+        }
+        if(objects[i][3] == 0.3) {
+          color = vec3(0.,0.,1.);
+        }
+        vec4 sobj = circle(fragCoord.xy, iResolution.xy * objects[i].xy, iResolution.x * objects[i][2], color/2);
+        fragColor = mix(fragColor, sobj, sobj.a);
     }
-    return 1.0;
-}
-
-half4 main(float2 xy) {
-    float2 center = float2(1, 1); // Circle center
-    float radius = 0.3 + 0.1 * sin(iTime); // Radius of the circle, oscillates over time
-
-    // Calculate distance from center
-    float dist = length(xy - center);
-
-    float3 color;
-    half4 final;
-    if (image.eval(xy).rgb == float3(1)) {
-
-    vec2 uv = xy;
-
-    uv *= pow(0.5, -1.0 + 15.0 * (0.5 + 0.5 * sin(iTime * 0.00080 - (3.14159265))));
-    uv += vec2(-0.51, -0.61351); // an interesting coordinate to zoom in on 
-    float f = julia(vec2(0.0, 0.0), uv);
-    
-      final = vec4((1.0 - uv) * pow(f, 0.5), f, 1.0);
-    } else {
-        color = float3(0, 0, 0); // Outside color (Blue)
-        final = half4(color, 0);
-    }
-
-    color = float3(0, 0, 0); // Outside color (Blue)
-    final = half4(color, 1);
-    return final;
+  return fragColor;
 }
 `
 )!;
 
 
-source = Skia.RuntimeEffect.Make(
-`
-uniform float2 u_resolution;
-uniform float iTime;
-uniform shader image;
-
-half4 main(float2 xy) {
-  float3 color = float3(0, 0, 0); // Outside color (Blue)
-  vec4 final = half4(color, 1);
-  if(u_resolution.x > xy.x) {
-   return half4(0,1,1,1);
-  }
- return half4(1,1,1,1);
-}`)!;
-
-source = Skia.RuntimeEffect.Make(
-`
-uniform shader image;
-uniform float2 u_resolution;
-uniform float iTime;
-float random (in float2 _st) {
- return fract(sin(dot(_st.xy,
- float2(12.9898,78.233)))*
- 43758.5453123);
-}
-// Based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise (in float2 _st) {
- float2 i = floor(_st);
- float2 f = fract(_st);
-// Four corners in 2D of a tile
- float a = random(i);
- float b = random(i + float2(1.0, 0.0));
- float c = random(i + float2(0.0, 1.0));
- float d = random(i + float2(1.0, 1.0));
-float2 u = f * f * (3.0 - 2.0 * f);
-return mix(a, b, u.x) +
- (c - a) * u.y * (1.0 - u.x) +
- (d - b) * u.x * u.y;
-}
-float fbm ( in float2 _st) {
- float v = 0.0;
- float a = 0.5;
- float2 shift = float2(100.0);
- // Rotate to reduce axial bias
- float2x2 rot = float2x2(cos(0.5), sin(0.5),
- -sin(0.5), cos(0.50));
- for (int i = 0; i < 5; ++i) {
- v += a * noise(_st);
- _st = rot * _st * 2.0 + shift;
- a *= 0.5;
- }
- return v;
-}
-half4 main(float2 fragCoord) {
- float2 st = fragCoord.xy/u_resolution.xy*3.;
- // st += st * abs(sin(iTime*0.01)*3.0);
- float3 color = float3(0.0);
-float2 q = float2(0.);
- q.x = fbm( st + 0.00*iTime);
- q.y = fbm( st + float2(1.0));
-float2 r = float2(0.);
- r.x = fbm( st + 1.0*q + float2(1.7,9.2)+ 0.015*iTime );
- r.y = fbm( st + 1.0*q + float2(8.3,2.8)+ 0.0126*iTime);
-float f = fbm(st+r);
-color = mix(float3(0.101961,0.619608,0.666667),
- float3(0.666667,0.666667,0.498039),
- clamp((f*f)*4.0,0.0,1.0));
-color = mix(color,
- float3(0,0,0.164706),
- clamp(length(q),0.0,1.0));
-color = mix(color,
- float3(0.666667,1,1),
- clamp(length(r.x),0.0,1.0));
-return half4((f*f*f+.6*f*f+.5*f)*color,1.);
-}
-`
-)!;
+export type RenderableObject = [number, number, number, number]
 
 export class BackgroundSprite implements Sprite {
   reactComponent(props?: {} | undefined): JSX.Element {
-    const res = vec(100.0,200.0)
     const clock = useClock();
-    const uniforms = useDerivedValue(() => ({u_resolution: res, iTime: clock.value/20 }), [clock, res]);
+    const res = vec(Math.min(Dimensions.get('window').height,Dimensions.get('window').width),Math.min(Dimensions.get('window').height,Dimensions.get('window').width))
+    const uniforms = useDerivedValue(() => ({ iTime: clock.value/2000, iResolution: res}), [clock, res]);
       return (
       <View style= {StyleSheet.absoluteFill}>
-        <Canvas style={{height: '100%', width: '100%',  }}>
+        <Canvas style={{height: '100%', width: '100%'}}>
         <Group>
           <RuntimeShader source={source} uniforms={uniforms} ></RuntimeShader>
-          <Rect height={Dimensions.get('window').width} width={Dimensions.get('window').height} color="#ff0000">
+          <Rect height={Dimensions.get('window').width} width={Dimensions.get('window').height}>
+          </Rect>
+        </Group>
+        </Canvas>
+        </View>
+      )
+  }
+}
+
+export class ForeGroundSprite implements Sprite {
+  ref: Reference<RenderableObject[]>;
+  constructor(objects: RenderableObject[]) {
+    this.ref = new Reference(objects);
+  }
+  updateLayout(objects: RenderableObject[]) {
+    this.ref.setValue(objects);
+  }
+  reactComponent(props?: {} | undefined): JSX.Element {
+    const res = vec(Math.min(Dimensions.get('window').height,Dimensions.get('window').width),Math.min(Dimensions.get('window').height,Dimensions.get('window').width))
+    const clock = useClock();
+    const ref = Reference.use(this.ref);
+    const uniforms = useDerivedValue(() => ({iResolution: res, iTime: clock.value, objects: [...ref]}), [[...ref], res]);
+      return (
+      <View style= {StyleSheet.absoluteFill}>
+        <Canvas style={{height: '100%', width: '100%'}}>
+        <Group>
+          <RuntimeShader source={shader2} uniforms={uniforms} ></RuntimeShader>
+          <Rect height={Dimensions.get('window').width} width={Dimensions.get('window').height}>
           </Rect>
         </Group>
         </Canvas>

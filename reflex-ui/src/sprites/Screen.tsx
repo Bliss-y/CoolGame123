@@ -22,7 +22,7 @@ reactComponent(props?: {} | undefined): JSX.Element {
 const source = Skia.RuntimeEffect.Make(
   `
 uniform shader image;
-uniform float  iTime;   
+uniform float  iTime;
 
 float f(vec3 p) {
     p.z -= iTime * 10.;
@@ -77,7 +77,12 @@ Skia.Color(c)
 );
 
 export function interpolateCoordinates(position: Position) {
-  return {x: position.x / Dimensions.get("window").height, y: position.y / Dimensions.get("window").height}
+  return {x: interpolateValue(position.x), y: interpolateValue(position.y)};
+  return {x: position.x * (Dimensions.get("window").height/1000), y: position.y * (Dimensions.get("window").height/1000)}
+}
+
+export function interpolateValue(x:number) {
+  return x * (Math.min(Dimensions.get("window").height, Dimensions.get("window").width)/ 1000);
 }
 
 export class CircleSprite implements Sprite {
@@ -89,6 +94,7 @@ export class CircleSprite implements Sprite {
   animated = new Attribute(0);
   oparef = new Attribute(1);
   scale = new Attribute(1);
+  radiusRef: Reference<number>;
   radius: number;
   id: number;
   constructor(radius: number,position: Position, color: Color, id: number) {
@@ -99,6 +105,7 @@ export class CircleSprite implements Sprite {
     this.radius = radius;
     this.id = id;
     this.ref = new Reference(color);
+    this.radiusRef = new Reference(this.radius);
   }
   onLayoutUpdate(position: Position, color: Color, destroyed: boolean, radius: number) {
     this.position.x.animateTo(position.x - radius, timingAnim({duration: 35, useNativeDriver: true}))
@@ -106,32 +113,22 @@ export class CircleSprite implements Sprite {
     this.scale.animateTo(radius/50, timingAnim({duration: 50, useNativeDriver: true}));
     this.radius = radius;
     this.ref.setValue(color);
+    this.radiusRef.setValue(this.radius);
     this.oparef.setValue(destroyed ? 0 : 1);
   }
   reactComponent(props?: {} | undefined): JSX.Element {
-    const _ = Reference.use(this.ref)
-    const colors = ["#fff", "#fff", "#fff", "#fff"]
+    const _ = Reference.use(this.ref);
+    const radiusRef = Reference.use(this.radiusRef);
+    const colors = ["#ff0", "#0ff", "#ff0", "#f0f"]
     const clock = useClock();
     const uniforms = useDerivedValue(() => ({ iTime: clock.value }), [clock]);
     return (
-    <Animated.View {...props} style= {[StyleSheet.absoluteFill, { transform: [{translateX: this.position.x.animated}, {translateY: this.position.y.animated }], opacity: this.oparef.animated }]} >
-        <Canvas style={{ height: this.radius * 2, width: this.radius * 2 }}>
+    <Animated.View {...props} style= {[StyleSheet.absoluteFill, { transform: [{translateX: this.position.x.animated}, {translateY: this.position.y.animated } ], opacity: this.oparef.animated }]} >
+        <Canvas style={{ height: this.radiusRef.value * 2, width: this.radiusRef.value * 2 }}>
           <Group>
-            <RuntimeShader source={source} uniforms={uniforms}/>
-            <Circle cx={this.radius} cy={this.radius} r={this.radius} color={colors[_]} />
+            <Circle cx={this.radiusRef.value} cy={this.radiusRef.value} r={this.radiusRef.value} color={colors[_]} />
           </Group>
         </Canvas>
-      </Animated.View>
-    )
-   return(
-      <Animated.View style={[StyleSheet.absoluteFill,{ transform: [{translateX: this.position.x.animated}, {translateY: this.position.y.animated}], opacity: this.oparef.animated}] }>
-      <Canvas style={{height: 128 * 2, width: 128 * 2}}>
-        <Group>
-          <RuntimeShader source={source} uniforms={uniforms}>
-        <Circle r={128} color={"red"} cx={64} cy={64}></Circle>
-        </RuntimeShader>
-        </Group>
-      </Canvas>
       </Animated.View>
     )
   }
